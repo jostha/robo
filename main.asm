@@ -21,9 +21,24 @@ BasicUpstart2(start)
 start:		SetBorderColor(BLACK)
 		SetBackgroundColor(BLACK)	
 
-loop1:
+		jsr init_robo
 
-		ldx #$80
+//loop1: 		jmp loop1
+		rts
+
+//// MACROS
+.macro SetBorderColor(color) { 
+		lda #color
+		sta $d020
+}
+
+.macro SetBackgroundColor(color) {
+		lda #color
+		sta $d021
+}
+
+//// SUBROUTINES
+init_robo:	ldx #$80
 		stx $07f8	// sprite data pointer 
 		ldy #%00000001
 		sty $d015	// sprite 0 enabled
@@ -40,23 +55,9 @@ loop1:
                 sta $D026
 		lda #LIGHT_GREY // sprite 0 colour
 		sta $D027
-		jmp loop1
-
-// A little macro
-.macro SetBorderColor(color) {  // <- This is how macros are defined
-	lda #color
-	sta $d020
-}
-
-// A little macro
-.macro SetBackgroundColor(color) {  // <- This is how macros are defined
-	lda #color
-	sta $d021
-}
+		rts	
 
 //// ROBO SPRITES
-
 * = $2000 "Sprite 0"
-
 #import "spr_robo.asm"
 
