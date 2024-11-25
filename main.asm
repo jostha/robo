@@ -18,13 +18,16 @@ BasicUpstart2(start)
 // LIGHT_BLUE  = $0e
 // LIGHT_GREY  = $0f
 
-start:		SetBorderColor(BLACK)
+start:	
+		SetBorderColor(BLACK)
 		SetBackgroundColor(BLACK)	
 
-		jsr init_robo
+		jsr robo_init
 
-//loop1: 		jmp loop1
-		rts
+gameloop: 	
+		jsr robo_waiting
+		jmp gameloop
+	//	rts
 
 //// MACROS
 .macro SetBorderColor(color) { 
@@ -38,7 +41,19 @@ start:		SetBorderColor(BLACK)
 }
 
 //// SUBROUTINES
-init_robo:	ldx #$80
+delay:
+		ldx #$ff
+	delay_loop1:
+		ldy #$ff
+	delay_loop2:
+		dey
+		bne delay_loop2
+		dex
+		bne delay_loop1
+		rts
+
+robo_init:	
+		ldx #$80
 		stx $07f8	// sprite data pointer 
 		ldy #%00000001
 		sty $d015	// sprite 0 enabled
@@ -56,6 +71,18 @@ init_robo:	ldx #$80
 		lda #LIGHT_GREY // sprite 0 colour
 		sta $D027
 		rts	
+
+robo_waiting:	
+	display_robo_still_eyesleft:
+                ldx #$80
+		stx $07f8	// sprite data pointer 
+		jsr delay
+		jsr delay
+	display_robo_still_eyesright:
+                ldx #$81
+                stx $07f8
+		jsr delay
+                rts
 
 //// ROBO SPRITES
 * = $2000 "Sprite 0"

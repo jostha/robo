@@ -2,7 +2,7 @@
 // Byte 64 of each sprite contains multicolor (high nibble) & color (low nibble) information
 
 // sprite 0 / multicolor / color: $0f
-robo1:
+robo_still_eyesleft:
 .byte $00,$00,$00,$00,$00,$00,$00,$00
 .byte $00,$aa,$5a,$aa,$ff,$ff,$ff,$29
 .byte $6a,$a8,$29,$e9,$e8,$2b,$eb,$e8
@@ -13,7 +13,7 @@ robo1:
 .byte $00,$00,$82,$00,$01,$81,$80,$8f
 
 // sprite 1 / multicolor / color: $0f
-robo2:
+robo_still_eyesright:
 .byte $00,$00,$00,$00,$00,$00,$00,$00
 .byte $00,$aa,$5a,$aa,$ff,$ff,$ff,$29
 .byte $6a,$a8,$2b,$6b,$68,$2b,$eb,$e8
@@ -24,7 +24,7 @@ robo2:
 .byte $00,$00,$82,$00,$01,$81,$80,$8f
 
 // sprite 2 / multicolor / color: $0f
-robo3:
+robo_still_foottap:
 .byte $00,$00,$00,$00,$00,$00,$00,$00
 .byte $00,$aa,$5a,$aa,$ff,$ff,$ff,$29
 .byte $6a,$a8,$29,$e9,$e8,$2b,$eb,$e8
@@ -35,7 +35,7 @@ robo3:
 .byte $00,$01,$82,$00,$00,$81,$80,$8f
 
 // sprite 3 / multicolor / color: $0f
-robo4:
+robo_still_naillook:
 .byte $00,$00,$00,$00,$00,$00,$00,$00
 .byte $00,$aa,$5a,$aa,$ff,$ff,$ff,$29
 .byte $6a,$a8,$2b,$eb,$e8,$2b,$6b,$68
