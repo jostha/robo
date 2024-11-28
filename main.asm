@@ -1,8 +1,4 @@
-BasicUpstart2(start)
-
-joy2_info:	
-	.byte 0
-
+//// NOTES
 // c64 colors
 // BLACK       = $00
 // WHITE       = $01
@@ -21,6 +17,19 @@ joy2_info:
 // LIGHT_BLUE  = $0e
 // LIGHT_GREY  = $0f
 
+//// VARIABLES
+
+// These are to reuse the joystick and sprite routines
+// to allow two players without code duplication
+
+.var joy  = $dc00
+.var joy1 = $dc00
+.var joy2 = $dc01
+
+//// PROG
+
+		BasicUpstart2(start)
+
 start:	
 		SetBorderColor(BLACK)
 		SetBackgroundColor(BLACK)	
@@ -28,7 +37,9 @@ start:
 		jsr robo_init
 
 gameloop: 	
-		jsr input_joy2	// check for joystick input
+		lda joy1	// Player 1
+		sta joy
+		jsr input_joy	// check for joystick input
 	//	jsr robo_waiting
 		jmp gameloop
 	//	rts
@@ -58,7 +69,7 @@ delay:
 		bne delay_loop1
 		rts
 
-input_joy2:
+input_joy:
 
 // joystick bits
 // bit 0: up            1
@@ -70,29 +81,30 @@ input_joy2:
 		jsr wait_vsync
 
 //		lda $dc01       // read joy port 1
-		lda $dc00       // read joy port 2
+		//lda $dc00       // read joy port 2
+		lda joy		// joy is defined in main loop
 		tax 		// store value in x as later checks will affect accumulator 
 
-	joy2_read:
+	joy_read:
 		txa
 		and #%00000001
-		beq joy2_up
+		beq joy_up
 
 		txa
 		and #%00000010
-		beq joy2_down
+		beq joy_down
 
 		txa
 		and #%00000100
-		beq joy2_left
+		beq joy_left
 
 		txa
 		and #%00001000
-		beq joy2_right
+		beq joy_right
 
 		rts
 
-	joy2_up:
+	joy_up:
 		lda $d001	// read y
 		cmp #$00	// check not at minimum
 		beq no_move_y
@@ -101,7 +113,7 @@ input_joy2:
 		sta $d001	// new y
 		rts		
 
-	joy2_down:
+	joy_down:
 		lda $d001	// read y
 		cmp #$ff	// check not at maximum
 		beq no_move_y
@@ -110,7 +122,7 @@ input_joy2:
 		sta $d001	// new y
 		rts		
 
-	joy2_left:
+	joy_left:
 		lda $d000	// read x
 		cmp #$00	// check not at minimum
 		beq no_move_x
@@ -119,7 +131,7 @@ input_joy2:
 		sta $d000	// new x
 		rts		
 
-	joy2_right:
+	joy_right:
 		lda $d000	// read x
 		cmp #$ff	// check not at maximum
 		beq no_move_x
@@ -129,7 +141,7 @@ input_joy2:
 		rts		
 
 
-	joy2_fire:
+	joy_fire:
 	no_move_x:
 	no_move_y:
 		rts
