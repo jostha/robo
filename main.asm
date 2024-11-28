@@ -1,5 +1,8 @@
 BasicUpstart2(start)
 
+joy2_info:	
+	.byte 0
+
 // c64 colors
 // BLACK       = $00
 // WHITE       = $01
@@ -25,9 +28,11 @@ start:
 		jsr robo_init
 
 gameloop: 	
-		jsr robo_waiting
+		jsr input_joy2	// check for joystick input
+	//	jsr robo_waiting
 		jmp gameloop
 	//	rts
+
 
 //// MACROS
 .macro SetBorderColor(color) { 
@@ -39,6 +44,7 @@ gameloop:
 		lda #color
 		sta $d021
 }
+
 
 //// SUBROUTINES
 delay:
@@ -52,6 +58,83 @@ delay:
 		bne delay_loop1
 		rts
 
+input_joy2:
+
+// joystick bits
+// bit 0: up            1
+// bit 1: down		2
+// bit 2: left		4
+// bit 3: right		8
+// bit 4: fire		16
+
+		jsr wait_vsync
+
+//		lda $dc01       // read joy port 1
+		lda $dc00       // read joy port 2
+		tax 		// store value in x as later checks will affect accumulator 
+
+	joy2_read:
+		txa
+		and #%00000001
+		beq joy2_up
+
+		txa
+		and #%00000010
+		beq joy2_down
+
+		txa
+		and #%00000100
+		beq joy2_left
+
+		txa
+		and #%00001000
+		beq joy2_right
+
+		rts
+
+	joy2_up:
+		lda $d001	// read y
+		cmp #$00	// check not at minimum
+		beq no_move_y
+		sec		// set carry flag for subtraction
+		sbc #$01	// subtract from y
+		sta $d001	// new y
+		rts		
+
+	joy2_down:
+		lda $d001	// read y
+		cmp #$ff	// check not at maximum
+		beq no_move_y
+		clc		// clear carry flag for addition
+		adc #$01	// add to y
+		sta $d001	// new y
+		rts		
+
+	joy2_left:
+		lda $d000	// read x
+		cmp #$00	// check not at minimum
+		beq no_move_x
+		sec		// set carry flag for subtraction
+		sbc #$01	// sub from x
+		sta $d000	// new x
+		rts		
+
+	joy2_right:
+		lda $d000	// read x
+		cmp #$ff	// check not at maximum
+		beq no_move_x
+		clc		// clear carry flag
+		adc #$01	// add to x
+		sta $d000	// new x
+		rts		
+
+
+	joy2_fire:
+	no_move_x:
+	no_move_y:
+		rts
+
+	
 robo_init:	
 		ldx #$80
 		stx $07f8	// sprite data pointer 
@@ -83,6 +166,12 @@ robo_waiting:
                 stx $07f8
 		jsr delay
                 rts
+
+wait_vsync:
+		lda $d012	// read raster line
+		cmp #$ff	// compare with last line of screen
+		bne wait_vsync	// wait until raster line hits bottom of screen
+		rts
 
 //// ROBO SPRITES
 * = $2000 "Sprite 0"
