@@ -1,4 +1,5 @@
 //// NOTES
+
 // c64 colors
 // BLACK       = $00
 // WHITE       = $01
@@ -17,44 +18,66 @@
 // LIGHT_BLUE  = $0e
 // LIGHT_GREY  = $0f
 
+
+
 //// VARIABLES
 
 // These are to reuse the joystick and sprite routines
 // to allow two players without code duplication
 
-.var joy  = $dc00
 .var joy1 = $dc00
 .var joy2 = $dc01
+
 
 //// PROG
 
 		BasicUpstart2(start)
+		*=$08f0 "Main Code"
+		robox:	.byte 100	// in order to reuse subr
+		roboy:	.byte 100	// these temp vars are used
+		robo0x:	.byte 100
+		robo0y:	.byte 100
+		robo1x:	.byte 100
+		robo1y:	.byte 100
+		joy:	.byte 0	
 
 start:	
+
 		SetBorderColor(BLACK)
 		SetBackgroundColor(BLACK)	
+		jsr cls
 
 		jsr robo_init
 
-gameloop: 	
+game_loop: 	
 		lda joy1	// Player 1
 		sta joy
+		ldx robo0x
+		stx robox
+		ldy robo0y
+		sty roboy
 		jsr input_joy	// check for joystick input
+		ldx robox
+		stx robo0x
+		ldy roboy
+		sty robo0y
+
+		lda joy2	// Player 2
+		sta joy
+		ldx robo1x
+		stx robox
+		ldy robo1y
+		sty roboy
+		jsr input_joy	// check for joystick input
+		ldx robox
+		stx robo1x
+		ldy roboy
+		sty robo1y
+
+		jsr draw_stuff
 	//	jsr robo_waiting
-		jmp gameloop
+		jmp game_loop
 	//	rts
-
-
-//// MACROS
-.macro SetBorderColor(color) { 
-		lda #color
-		sta $d020
-}
-
-.macro SetBackgroundColor(color) {
-		lda #color
-		sta $d021
-}
 
 
 //// SUBROUTINES
@@ -67,7 +90,24 @@ delay:
 		bne delay_loop2
 		dex
 		bne delay_loop1
+
 		rts
+
+draw_stuff:
+		jsr wait_vsync
+
+		ldx robo0x	// draw spr 0
+		ldy robo0y
+		stx $d000	
+		sty $d001
+
+		ldx robo1x	// draw spr 1
+		ldy robo1y
+		stx $d002	
+		sty $d003
+
+		rts
+
 
 input_joy:
 
@@ -78,10 +118,9 @@ input_joy:
 // bit 3: right		8
 // bit 4: fire		16
 
-		jsr wait_vsync
+// lda $dc01       // read joy port 1
+// lda $dc00       // read joy port 2
 
-//		lda $dc01       // read joy port 1
-		//lda $dc00       // read joy port 2
 		lda joy		// joy is defined in main loop
 		tax 		// store value in x as later checks will affect accumulator 
 
@@ -105,39 +144,31 @@ input_joy:
 		rts
 
 	joy_up:
-		lda $d001	// read y
+		lda roboy	// read y
 		cmp #$00	// check not at minimum
 		beq no_move_y
-		sec		// set carry flag for subtraction
-		sbc #$01	// subtract from y
-		sta $d001	// new y
+		dec roboy
 		rts		
 
 	joy_down:
-		lda $d001	// read y
+		lda roboy	// read y
 		cmp #$ff	// check not at maximum
 		beq no_move_y
-		clc		// clear carry flag for addition
-		adc #$01	// add to y
-		sta $d001	// new y
+		inc roboy
 		rts		
 
 	joy_left:
-		lda $d000	// read x
+		lda robox	// read x
 		cmp #$00	// check not at minimum
 		beq no_move_x
-		sec		// set carry flag for subtraction
-		sbc #$01	// sub from x
-		sta $d000	// new x
+		dec robox
 		rts		
 
 	joy_right:
-		lda $d000	// read x
+		lda robox	// read x
 		cmp #$ff	// check not at maximum
 		beq no_move_x
-		clc		// clear carry flag
-		adc #$01	// add to x
-		sta $d000	// new x
+		inc robox
 		rts		
 
 
@@ -149,22 +180,42 @@ input_joy:
 	
 robo_init:	
 		ldx #$80
-		stx $07f8	// sprite data pointer 
-		ldy #%00000001
+		stx $07f8	// sprite 0 data pointer 
+		stx $07f9	// sprite 1 data pointer (same sprite data) 
+		ldy #%00000011
 		sty $d015	// sprite 0 enabled
 
+		ldx robo0x
 		stx $d000	// sprite 0x
-		stx $d001	// sprite 0y (both set to 128 (from #$80 above))
+		ldy robo0y
+		sty $d001	// sprite 0y
 
-		lda #%00000001  // Enable multicolor mode for sprite 0
-		sta $D01C
+		ldx robo1x
+		stx $d002	// sprite 1x
+		ldy robo1y
+		sty $d003	// sprite 1y 
+
+		lda #%00000011  // Enable multicolor mode for sprite 0 & 1
+		sta $d01C
 
                 lda #WHITE      // sprite multicolor register 1
-                sta $D025
+                sta $d025
                 lda #DARK_GREY  // sprite multicolor register 2
-                sta $D026
+                sta $d026
 		lda #LIGHT_GREY // sprite 0 colour
-		sta $D027
+		sta $d027
+
+		lda #ORANGE 	// sprite 1 colour
+		sta $d028
+
+		ldx #100
+		stx robo0x
+		stx robo0y
+
+		ldx #60
+		stx robo1x
+		stx robo1y
+
 		rts	
 
 robo_waiting:	
@@ -185,7 +236,11 @@ wait_vsync:
 		bne wait_vsync	// wait until raster line hits bottom of screen
 		rts
 
+
 //// ROBO SPRITES
-* = $2000 "Sprite 0"
+* = $2000 "Sprites"
 #import "spr_robo.asm"
+#import "macros.asm"
+#import "sub/cls.asm"
+#import "sub/pushpull.asm"
 
