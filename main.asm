@@ -41,6 +41,14 @@
 		robo1y:	.byte 100
 		joy:	.byte 0	
 
+		// sprite animation counter and arrays
+		spr_rw_pos:	.byte 0		// counter
+		ldx #$00
+		stx spr_rw_pos
+		spr_rw:	.byte $84, $84, $84, $84, $85, $85, $85, $85, $86, $86, $86, $86, $85, $85, $85, $85
+			// ^ spr 0 and 1 r walk anim frames
+
+
 start:	
 
 		SetBorderColor(BLACK)
@@ -105,6 +113,9 @@ draw_stuff:
 		ldy robo1y
 		stx $d002	
 		sty $d003
+		ldx spr_rw_pos
+		lda spr_rw, x
+		sta $07f8
 
 		rts
 
@@ -122,8 +133,7 @@ input_joy:
 // lda $dc00       // read joy port 2
 
 		lda joy		// joy is defined in main loop
-		tax 		// store value in x as later checks will affect accumulator 
-
+tax 		// store value in x as later checks will affect accumulator 
 	joy_read:
 		txa
 		and #%00000001
@@ -169,8 +179,16 @@ input_joy:
 		cmp #$ff	// check not at maximum
 		beq no_move_x
 		inc robox
+		lda spr_rw_pos
+		cmp #15
+		beq reset_spr_rw_pos	// start animation again
+		inc spr_rw_pos	
 		rts		
 
+	reset_spr_rw_pos:	// return to frame 0 for rw (right walk)
+		ldx #$00
+		stx spr_rw_pos
+		rts
 
 	joy_fire:
 	no_move_x:
