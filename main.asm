@@ -42,14 +42,17 @@
 		joy:	.byte 0	
 
 		// sprite animation counter and arrays
-		spr_rw_pos:	.byte 0		// counter
+		spr_tbl_pos:	.byte 0		// counter
 		spr0_rw_pos:	.byte 0		// counter
 		spr1_rw_pos:	.byte 0		// counter
 		ldx #$00
-		stx spr_rw_pos
-		spr_table:	.byte $80, $84, $84, $84, $84, $85, $85, $85, $85, $86, $86, $86, $86, $85, $85, $85, $85
-			// ^ spr 0 and 1 anim frames
-
+		stx spr_tbl_pos
+		spr_table:	.byte $80	 
+				.byte $84, $84, $84, $84, $85, $85, $85, $85, $86, $86, $86, $86, $85, $85, $85, $85
+				.byte $87, $87, $87, $87, $88, $88, $88, $88, $89, $89, $89, $89, $88, $88, $88, $88
+			// ^ spr 0 and 1 anim frames	00     looking forward
+			//				01-16  walking right
+			//				17-32  walking left
 
 start:	
 
@@ -67,13 +70,13 @@ game_loop:
 		ldy robo0y
 		sty roboy
 		ldx spr0_rw_pos
-		stx spr_rw_pos
+		stx spr_tbl_pos
 		jsr input_joy	// check for joystick input
 		ldx robox	// transfer appropriate values
 		stx robo0x
 		ldy roboy
 		sty robo0y
-		ldx spr_rw_pos
+		ldx spr_tbl_pos
 		stx spr0_rw_pos
 
 		lda joy2	// Player 2
@@ -83,13 +86,13 @@ game_loop:
 		ldy robo1y
 		sty roboy
 		ldx spr1_rw_pos
-		stx spr_rw_pos
+		stx spr_tbl_pos
 		jsr input_joy	// check for joystick input
 		ldx robox
 		stx robo1x
 		ldy roboy
 		sty robo1y
-		ldx spr_rw_pos
+		ldx spr_tbl_pos
 		stx spr1_rw_pos
 
 		jsr draw_stuff
@@ -184,6 +187,12 @@ tax 		// store value in x as later checks will affect accumulator
 		cmp #$00	// check not at minimum
 		beq no_move_x
 		dec robox
+		lda spr_tbl_pos
+		cmp #16
+		bcc reset_spr_lw_pos
+		cmp #32
+		bcs reset_spr_lw_pos	// start animation again
+		inc spr_tbl_pos	
 		rts		
 
 	joy_right:
@@ -191,15 +200,22 @@ tax 		// store value in x as later checks will affect accumulator
 		cmp #$ff	// check not at maximum
 		beq no_move_x
 		inc robox
-		lda spr_rw_pos
-		cmp #16
-		beq reset_spr_rw_pos	// start animation again
-		inc spr_rw_pos	
+		lda spr_tbl_pos
+		cmp #00
+		bcc reset_spr_rw_pos
+		cmp #17
+		bcs reset_spr_rw_pos	// start animation again
+		inc spr_tbl_pos	
 		rts		
+
+	reset_spr_lw_pos:	// return to frame 1 for rw (right walk)
+		ldx #$16
+		stx spr_tbl_pos
+		rts
 
 	reset_spr_rw_pos:	// return to frame 1 for rw (right walk)
 		ldx #$01
-		stx spr_rw_pos
+		stx spr_tbl_pos
 		rts
 
 	joy_fire:
@@ -209,7 +225,7 @@ tax 		// store value in x as later checks will affect accumulator
 
 	nothing_pressed:
 		ldx #$00	// if not moving this frame face forward (0 in sprite table)
-		stx spr_rw_pos
+		stx spr_tbl_pos
 		rts
 
 	
