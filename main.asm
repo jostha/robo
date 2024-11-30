@@ -187,9 +187,9 @@ tax 		// store value in x as later checks will affect accumulator
 		cmp #$00	// check not at minimum
 		beq no_move_x
 		dec robox
-		lda spr_tbl_pos
-		cmp #16
-		bcc reset_spr_lw_pos
+		lda spr_tbl_pos		// before incrementing position in animation table
+		cmp #16			// check the current animation frame indicates
+		bcc reset_spr_lw_pos	// robo is already moving left (frame 16-32), otherwise reset
 		cmp #32
 		bcs reset_spr_lw_pos	// start animation again
 		inc spr_tbl_pos	
@@ -200,9 +200,9 @@ tax 		// store value in x as later checks will affect accumulator
 		cmp #$ff	// check not at maximum
 		beq no_move_x
 		inc robox
-		lda spr_tbl_pos
-		cmp #00
-		bcc reset_spr_rw_pos
+		lda spr_tbl_pos		// before incrementing position in animation table
+		cmp #00			// check the current animation frame indicates
+		bcc reset_spr_rw_pos	// robo is already moving right (frame 01-17), otherwise reset
 		cmp #17
 		bcs reset_spr_rw_pos	// start animation again
 		inc spr_tbl_pos	
