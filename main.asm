@@ -43,10 +43,12 @@
 
 		// sprite animation counter and arrays
 		spr_rw_pos:	.byte 0		// counter
+		spr0_rw_pos:	.byte 0		// counter
+		spr1_rw_pos:	.byte 0		// counter
 		ldx #$00
 		stx spr_rw_pos
-		spr_rw:	.byte $84, $84, $84, $84, $85, $85, $85, $85, $86, $86, $86, $86, $85, $85, $85, $85
-			// ^ spr 0 and 1 r walk anim frames
+		spr_table:	.byte $80, $84, $84, $84, $84, $85, $85, $85, $85, $86, $86, $86, $86, $85, $85, $85, $85
+			// ^ spr 0 and 1 anim frames
 
 
 start:	
@@ -64,11 +66,15 @@ game_loop:
 		stx robox
 		ldy robo0y
 		sty roboy
+		ldx spr0_rw_pos
+		stx spr_rw_pos
 		jsr input_joy	// check for joystick input
-		ldx robox
+		ldx robox	// transfer appropriate values
 		stx robo0x
 		ldy roboy
 		sty robo0y
+		ldx spr_rw_pos
+		stx spr0_rw_pos
 
 		lda joy2	// Player 2
 		sta joy
@@ -76,11 +82,15 @@ game_loop:
 		stx robox
 		ldy robo1y
 		sty roboy
+		ldx spr1_rw_pos
+		stx spr_rw_pos
 		jsr input_joy	// check for joystick input
 		ldx robox
 		stx robo1x
 		ldy roboy
 		sty robo1y
+		ldx spr_rw_pos
+		stx spr1_rw_pos
 
 		jsr draw_stuff
 	//	jsr robo_waiting
@@ -108,17 +118,19 @@ draw_stuff:
 		ldy robo0y
 		stx $d000	
 		sty $d001
+		ldx spr0_rw_pos
+		lda spr_table, x
+		sta $07f8
 
 		ldx robo1x	// draw spr 1
 		ldy robo1y
 		stx $d002	
 		sty $d003
-		ldx spr_rw_pos
-		lda spr_rw, x
-		sta $07f8
+		ldx spr1_rw_pos
+		lda spr_table, x
+		sta $07f9
 
 		rts
-
 
 input_joy:
 
@@ -151,7 +163,7 @@ tax 		// store value in x as later checks will affect accumulator
 		and #%00001000
 		beq joy_right
 
-		rts
+		jmp nothing_pressed
 
 	joy_up:
 		lda roboy	// read y
@@ -180,19 +192,24 @@ tax 		// store value in x as later checks will affect accumulator
 		beq no_move_x
 		inc robox
 		lda spr_rw_pos
-		cmp #15
+		cmp #16
 		beq reset_spr_rw_pos	// start animation again
 		inc spr_rw_pos	
 		rts		
 
-	reset_spr_rw_pos:	// return to frame 0 for rw (right walk)
-		ldx #$00
+	reset_spr_rw_pos:	// return to frame 1 for rw (right walk)
+		ldx #$01
 		stx spr_rw_pos
 		rts
 
 	joy_fire:
 	no_move_x:
 	no_move_y:
+		rts
+
+	nothing_pressed:
+		ldx #$00	// if not moving this frame face forward (0 in sprite table)
+		stx spr_rw_pos
 		rts
 
 	
