@@ -25,14 +25,16 @@
 // These are to reuse the joystick and sprite routines
 // to allow two players without code duplication
 
-.var joy1 = $dc00
-.var joy2 = $dc01
+.var joy2 = $dc00
+.var joy1 = $dc01
 
 
 //// PROG
 
 		BasicUpstart2(start)
 		*=$08f0 "Main Code"
+
+		// counters for robo sprite position
 		robox:	.byte 100	// in order to reuse subr
 		roboy:	.byte 100	// these temp vars are used
 		robo0x:	.byte 100
@@ -43,16 +45,31 @@
 
 		// sprite animation counter and arrays
 		spr_tbl_pos:	.byte 0		// counter
-		spr0_rw_pos:	.byte 0		// counter
-		spr1_rw_pos:	.byte 0		// counter
+		spr0_tbl_pos:	.byte 0		// counter
+		spr1_tbl_pos:	.byte 0		// counter
 		ldx #$00
-		stx spr_tbl_pos
-		spr_table:	.byte $80	 
+		stx spr_tbl_pos   
+		spr_table:	.byte $80
+				.byte $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80	 
+				.byte $81, $81, $81, $81, $81, $81, $81, $80, $80, $80, $80, $80, $80, $80, $80, $80
+				.byte $82, $80, $82, $80, $82, $80, $82, $80, $82, $80, $82, $80, $82, $80, $82, $80
+				.byte $82, $80, $82, $80, $82, $80, $82, $80, $82, $80, $82, $80, $82, $80, $82, $80
+				.byte $82, $80, $82, $80, $82, $80, $82, $80, $82, $80, $82, $80, $82, $80, $82, $80
+				.byte $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80	 
+				.byte $80, $80, $80, $80, $80, $80, $80, $80, $83, $83, $83, $83, $83, $83, $83, $83	 
 				.byte $84, $84, $84, $84, $85, $85, $85, $85, $86, $86, $86, $86, $85, $85, $85, $85
 				.byte $87, $87, $87, $87, $88, $88, $88, $88, $89, $89, $89, $89, $88, $88, $88, $88
-			// ^ spr 0 and 1 anim frames	00     looking forward
-			//				01-16  walking right
-			//				17-32  walking left
+			// ^ spr 0 and 1 anim frames	000-112 looking forward, bored animation
+			//				112-127  walking right
+			//				128-143  walking left
+
+		robo_bored_low:		.byte $00	// facing forward counters for bored bot animation
+		robo_bored_high:	.byte $00	// the generic counter used by subroutine
+		robo0_bored_low:	.byte $00
+		robo0_bored_high:	.byte $00	// shiny
+		robo1_bored_low:	.byte $00
+		robo1_bored_high:	.byte $00	// rusty
+
 
 start:	
 
@@ -63,37 +80,65 @@ start:
 		jsr robo_init
 
 game_loop: 	
-		lda joy1	// Player 1
+		// load values prior to subroutine
+		lda joy2	// SH1N_13 ( Port 2 / SPR0 )
 		sta joy
 		ldx robo0x
 		stx robox
 		ldy robo0y
 		sty roboy
-		ldx spr0_rw_pos
+		ldx spr0_tbl_pos
 		stx spr_tbl_pos
-		jsr input_joy	// check for joystick input
+		ldx robo0_bored_low
+//		ldy robo0_bored_high
+		stx robo_bored_low
+//		sty robo_bored_high
+
+			// subroutine
+			jsr input_joy	// check for joystick input
+
+		// restore values post subroutine
 		ldx robox	// transfer appropriate values
 		stx robo0x
 		ldy roboy
 		sty robo0y
 		ldx spr_tbl_pos
-		stx spr0_rw_pos
+		stx spr0_tbl_pos
+		ldx robo_bored_low
+//		ldy robo_bored_high
+		stx robo0_bored_low
+//		sty robo0_bored_high
 
-		lda joy2	// Player 2
+
+		// load values prior to subroutine
+		lda joy1	// RU5-T13 ( Port 1 / SPR1 )
 		sta joy
 		ldx robo1x
 		stx robox
 		ldy robo1y
 		sty roboy
-		ldx spr1_rw_pos
+		ldx spr1_tbl_pos
 		stx spr_tbl_pos
-		jsr input_joy	// check for joystick input
+		ldx robo1_bored_low
+//		ldy robo1_bored_high
+		stx robo_bored_low
+//		sty robo_bored_high
+
+			// subroutine
+			jsr input_joy	// check for joystick input
+
+		// restore values post subroutine
 		ldx robox
 		stx robo1x
 		ldy roboy
 		sty robo1y
 		ldx spr_tbl_pos
-		stx spr1_rw_pos
+		stx spr1_tbl_pos
+		ldx robo_bored_low
+//		ldy robo_bored_high
+		stx robo1_bored_low
+//		sty robo1_bored_high
+
 
 		jsr draw_stuff
 	//	jsr robo_waiting
@@ -117,19 +162,19 @@ delay:
 draw_stuff:
 		jsr wait_vsync
 
-		ldx robo0x	// draw spr 0
+		ldx robo0x	// draw spr 0 - SH1N_13
 		ldy robo0y
 		stx $d000	
 		sty $d001
-		ldx spr0_rw_pos
+		ldx spr0_tbl_pos
 		lda spr_table, x
 		sta $07f8
 
-		ldx robo1x	// draw spr 1
+		ldx robo1x	// draw spr 1 - RU5-T13
 		ldy robo1y
 		stx $d002	
 		sty $d003
-		ldx spr1_rw_pos
+		ldx spr1_tbl_pos
 		lda spr_table, x
 		sta $07f9
 
@@ -148,7 +193,7 @@ input_joy:
 // lda $dc00       // read joy port 2
 
 		lda joy		// joy is defined in main loop
-tax 		// store value in x as later checks will affect accumulator 
+		tax 		// store value in x as later checks will affect accumulator 
 	joy_read:
 		txa
 		and #%00000001
@@ -183,38 +228,44 @@ tax 		// store value in x as later checks will affect accumulator
 		rts		
 
 	joy_left:
+		jsr reset_spr_bored_counter
 		lda robox	// read x
 		cmp #$00	// check not at minimum
 		beq no_move_x
 		dec robox
 		lda spr_tbl_pos		// before incrementing position in animation table
-		cmp #16			// check the current animation frame indicates
-		bcc reset_spr_lw_pos	// robo is already moving left (frame 16-32), otherwise reset
-		cmp #32
-		bcs reset_spr_lw_pos	// start animation again
+		cmp #129		// check the current animation frame 
+		bcc reset_spr_lw_pos	// bcc is branch if less than, which means
+					// robo is already moving left if higher than checked frame (128 in sprite counter), otherwise reset
+		cmp #144		// 16 frames of animation for walking, are we between the first (129) and last frame (144)?
+					// If not in the range we might have been going in another direction
+		bcs reset_spr_lw_pos	// start animation again if so
 		inc spr_tbl_pos	
 		rts		
 
 	joy_right:
+		jsr reset_spr_bored_counter
 		lda robox	// read x
 		cmp #$ff	// check not at maximum
 		beq no_move_x
 		inc robox
 		lda spr_tbl_pos		// before incrementing position in animation table
-		cmp #00			// check the current animation frame indicates
-		bcc reset_spr_rw_pos	// robo is already moving right (frame 01-17), otherwise reset
-		cmp #17
-		bcs reset_spr_rw_pos	// start animation again
+		cmp #113		// check the current animation frame 
+		bcc reset_spr_rw_pos	// bcc is branch if less than, which means
+					// robo is already moving right if higher than checked frame (113 in sprite counter), otherwise reset
+		cmp #128		// 16 frames of animation for walking, are we between the first (113) and last frame (128)?
+					// If not in the range we might have been going in another direction
+		bcs reset_spr_rw_pos	// start animation again if so
 		inc spr_tbl_pos	
 		rts		
 
-	reset_spr_lw_pos:	// return to frame 1 for rw (right walk)
-		ldx #$16
+	reset_spr_lw_pos:	// return to frame 1 for lw (left walk)
+		ldx #129
 		stx spr_tbl_pos
 		rts
 
 	reset_spr_rw_pos:	// return to frame 1 for rw (right walk)
-		ldx #$01
+		ldx #113
 		stx spr_tbl_pos
 		rts
 
@@ -224,8 +275,36 @@ tax 		// store value in x as later checks will affect accumulator
 		rts
 
 	nothing_pressed:
-		ldx #$00	// if not moving this frame face forward (0 in sprite table)
+		lda spr_tbl_pos
+		cmp #01
+		bcc reset_spr_bored_pos
+		cmp #112 
+		bcs reset_spr_bored_pos
+
+		// check if counter needs a reset
+		lda robo_bored_low
+		cmp #$12
+		bne bored_robo_check
+
+		inc spr_tbl_pos		// show robo getting bored
+
+		// reset counter
+		ldy #$00
+		sty robo_bored_low
+		rts
+
+	reset_spr_bored_pos:
+		ldx #01
 		stx spr_tbl_pos
+		rts
+
+	reset_spr_bored_counter:	// If a robo moves, reset the timeout for boredom animations
+		ldx #00
+		stx robo_bored_low
+		rts
+
+	bored_robo_check:	// counts to 255 before starting again
+		inc robo_bored_low
 		rts
 
 	
